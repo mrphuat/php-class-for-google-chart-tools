@@ -5,16 +5,17 @@ class Chart {
 	private static $_first = true;
 	private static $_count = 0;
 	
-	private $_type;
-	private $_skipFirstRow;
+	private $_chartType;
+	
 	private $_data;
 	private $_dataType;
+	private $_skipFirstRow;
 	
 	/**
 	 * sets the chart type and updates the chart counter
 	 */
-	public function __construct($type, $skipFirstRow = false){
-		$this->_type = $type;
+	public function __construct($chartType, $skipFirstRow = false){
+		$this->_chartType = $chartType;
 		$this->_skipFirstRow = $skipFirstRow;
 		self::$_count++;
 	}
@@ -22,37 +23,41 @@ class Chart {
 	/**
 	 * loads the dataset and converts it to the correct format
 	 */
-	public function load($data, $type = 'json'){
-		$this->_dataType = $type;
-		if($this->_dataType != 'json'){
-			$this->_data = $this->dataToJson($data);
-		} else {
-			$this->_data = $data;
-		}
+	public function load($data, $dataType = 'json'){
+		$this->_data = ($dataType != 'json') ? $this->dataToJson($data) : $data;
+	}
+	
+	/**
+	 * load jsapi
+	 */
+	private function initChart(){
+		self::$_first = false;
+		
+		$output = '';
+		// start a code block
+		$output .= '<script type="text/javascript" src="https://www.google.com/jsapi"></script>'."\n";
+		$output .= '<script type="text/javascript">google.load(\'visualization\', \'1.0\', {\'packages\':[\'corechart\']});</script>'."\n";
+		
+		return $output;
 	}
 	
 	/**
 	 * draws the chart
 	 */
+	
 	public function draw($div, Array $options = array()){
 		$output = '';
 		
-		// load jsapi if this is the first chart instance
-		if(self::$_first){
-			$output .= '<script type="text/javascript" src="https://www.google.com/jsapi"></script>';
-		}
+		if(self::$_first)$output .= $this->initChart();
+		
 		// start a code block
 		$output .= '<script type="text/javascript">';
-		// load corechart packages if this is the first chart instance
-		if(self::$_first){
-			$output .= 'google.load(\'visualization\', \'1.0\', {\'packages\':[\'corechart\']});';
-			self::$_first = false;
-		}
+
 		// set callback function
 		$output .= 'google.setOnLoadCallback(drawChart' . self::$_count . ');';
 		
 		// create callback function
-		$output .= 'function drawChart' . self::$_count . '() {';
+		$output .= 'function drawChart' . self::$_count . '(){';
 		
 		$output .= 'var data = new google.visualization.DataTable(' . $this->_data . ');';
 		
@@ -60,7 +65,7 @@ class Chart {
 		$output .= 'var options = ' . json_encode($options) . ';';
 		
 		// create and draw the chart
-		$output .= 'var chart = new google.visualization.' . $this->_type . '(document.getElementById(\'' . $div . '\'));';
+		$output .= 'var chart = new google.visualization.' . $this->_chartType . '(document.getElementById(\'' . $div . '\'));';
 		$output .= 'chart.draw(data, options);';
 		
 		$output .= '} </script>' . "\n";
